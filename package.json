@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "arctic": "^3.7.0",
-    "cookie-parser": "^1.4.7"
+    "cookie-parser": "^1.4.7",
+    "jose": "^6.2.13"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10"

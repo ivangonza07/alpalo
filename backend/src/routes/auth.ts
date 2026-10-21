@@ -5,6 +5,12 @@ import {
   OAuth2RequestError,
   ArcticFetchError,
 } from "arctic";
+import { requireAuth } from "../middleware/requireAuth.js";
+import {
+  SESSION_COOKIE,
+  SESSION_DURATION_MS,
+  createSessionToken,
+} from "../lib/session.js";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { env } from "../config/env.js";
@@ -98,6 +104,37 @@ authRouter.get("/github/callback", async (req, res) => {
     },
   });
 
-  // Provisional: en la siguiente tanda aquí se creará la sesión
+  const token = await createSessionToken(user.id);
+
+  res.cookie(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: SESSION_DURATION_MS,
+  });
+
+  // Provisional: cuando exista el frontend, aquí irá res.redirect(env.FRONTEND_URL)
   res.json({ id: user.id, name: user.name });
+});
+
+authRouter.get("/me", requireAuth, async (req, res) => {
+  const userId = req.userId;
+
+  if (userId === undefined) {
+    res.status(401).json({ error: "No has iniciado sesión" });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+
+  if (!user) {
+    res.status(401).json({ error: "No has iniciado sesión" });
+    return;
+  }
+
+  res.json({ id: user.id, name: user.name, avatarUrl: user.avatarUrl });
+});
+
+authRouter.post("/logout", (_req, res) => {
+  res.clearCookie(SESSION_COOKIE);
+  res.status(204).send();
 });
