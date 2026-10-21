@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import { calculatePoints } from "../scoring/calculatePoints.js";
+import { rankStandings } from "../scoring/rankStandings.js";
 
 export const leaguesRouter = Router();
 
@@ -60,21 +61,5 @@ leaguesRouter.get("/:id/standings", async (req, res) => {
     });
   }
 
-  standings.sort((a, b) => b.points - a.points);
-
-  const ranking: { position: number; user: string; points: number }[] = [];
-
-  for (const [index, entry] of standings.entries()) {
-    const previous = ranking.at(-1);
-
-    let position = index + 1;
-
-    if (previous && previous.points === entry.points) {
-      position = previous.position;
-    }
-
-    ranking.push({ position, ...entry });
-  }
-
-  res.json(ranking);
+  res.json(rankStandings(standings));
 });
