@@ -1,7 +1,10 @@
 import { Router } from "express";
-import { prisma } from "../lib/prisma.js";
+import { prisma } from "../utils/prisma.js";
 import { calculatePoints } from "../scoring/calculatePoints.js";
 import { rankStandings } from "../scoring/rankStandings.js";
+import { z } from "zod";
+import { requireAuth } from "../middleware/requireAuth.js";
+import { generateInviteCode } from "../utils/inviteCode.js";
 
 export const leaguesRouter = Router();
 
@@ -62,4 +65,52 @@ leaguesRouter.get("/:id/standings", async (req, res) => {
   }
 
   res.json(rankStandings(standings));
+});
+
+const createLeagueSchema = z.object({
+  name: z.string().trim().min(1).max(50),
+  competitionId: z.number().int().positive(),
+});
+
+leaguesRouter.post("/", requireAuth, async (req, res) => {
+  const userId = req.userId;
+
+  if (userId === undefined) {
+    res.status(401).json({ error: "No has iniciado sesión" });
+    return;
+  }
+
+  const result = createLeagueSchema.safeParse(req.body);
+
+  if (!result.success) {
+    res
+      .status(400)
+      .json({ error: "Datos no válidos", details: result.error.issues });
+    return;
+  }
+
+  const competition = await prisma.competition.findUnique({
+    where: { id: result.data.competitionId },
+  });
+
+  if (!competition) {
+    res.status(404).json({ error: "Competición no encontrada" });
+    return;
+  }
+
+  const league = await prisma.league.create({
+    data: {
+      name: result.data.name,
+      inviteCode: generateInviteCode(),
+      competitionId: competition.id,
+      memberships: { create: { userId, role: "ADMIN" } },
+    },
+  });
+
+  res.status(201).json({
+    id: league.id,
+    name: league.name,
+    inviteCode: league.inviteCode,
+    competitionId: league.competitionId,
+  });
 });

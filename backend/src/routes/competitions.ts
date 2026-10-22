@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { prisma } from "../lib/prisma.js";
+import { prisma } from "../utils/prisma.js";
 import { z } from "zod";
 
 export const competitionsRouter = Router();
@@ -8,6 +8,13 @@ export const competitionsRouter = Router();
 const createCompetitionSchema = z.object({
   name: z.string().trim().min(1),
   season: z.string().trim().min(1),
+});
+
+competitionsRouter.get("/", async (_req, res) => {
+  const competitions = await prisma.competition.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+  res.json(competitions);
 });
 
 competitionsRouter.post("/", async (req, res) => {

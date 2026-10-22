@@ -1,7 +1,7 @@
 // script para borrar la BD y despues rellenar la BD con datos reales para hacer pruebas
 
 import "dotenv/config";
-import { prisma } from "../lib/prisma.js";
+import { prisma } from "../utils/prisma.js";
 
 async function main() {
   // Borrar en orden inverso a las dependencias

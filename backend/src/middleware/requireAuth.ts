@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { SESSION_COOKIE, verifySessionToken } from "../lib/session.js";
+import { SESSION_COOKIE, verifySessionToken } from "../utils/session.js";
 
 export async function requireAuth(
   req: Request,

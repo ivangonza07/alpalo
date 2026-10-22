@@ -10,9 +10,9 @@ import {
   SESSION_COOKIE,
   SESSION_DURATION_MS,
   createSessionToken,
-} from "../lib/session.js";
+} from "../utils/session.js";
 import { z } from "zod";
-import { prisma } from "../lib/prisma.js";
+import { prisma } from "../utils/prisma.js";
 import { env } from "../config/env.js";
 
 export const authRouter = Router();
