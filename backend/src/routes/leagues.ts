@@ -114,3 +114,53 @@ leaguesRouter.post("/", requireAuth, async (req, res) => {
     competitionId: league.competitionId,
   });
 });
+
+const joinLeagueSchema = z.object({
+  inviteCode: z.string().trim().toUpperCase().min(1),
+});
+
+// el id de la liga viaja en el cuerpo de la peticion
+leaguesRouter.post("/join", requireAuth, async (req, res) => {
+  const userId = req.userId;
+
+  if (userId === undefined) {
+    res.status(401).json({ error: "No has iniciado sesión" });
+    return;
+  }
+
+  const result = joinLeagueSchema.safeParse(req.body);
+
+  if (!result.success) {
+    res
+      .status(400)
+      .json({ error: "Datos no válidos", details: result.error.issues });
+    return;
+  }
+
+  const league = await prisma.league.findUnique({
+    where: { inviteCode: result.data.inviteCode },
+  });
+
+  if (!league) {
+    res.status(404).json({ error: "La liga no existe" });
+    return;
+  }
+
+  const userInLeague = await prisma.membership.findUnique({
+    where: { userId_leagueId: { userId, leagueId: league.id } },
+  });
+
+  if (userInLeague) {
+    res.status(409).json({ error: "User exist" });
+    return;
+  }
+
+  await prisma.membership.create({
+    data: { userId, leagueId: league.id, role: "PLAYER" },
+  });
+
+  res.status(201).json({
+    id: league.id,
+    name: league.name,
+  });
+});
