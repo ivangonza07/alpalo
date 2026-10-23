@@ -8,7 +8,14 @@ import { generateInviteCode } from "../utils/inviteCode.js";
 
 export const leaguesRouter = Router();
 
-leaguesRouter.get("/:id/standings", async (req, res) => {
+leaguesRouter.get("/:id/standings", requireAuth, async (req, res) => {
+  const userId = req.userId;
+
+  if (userId === undefined) {
+    res.status(401).json({ error: "No has iniciado sesión" });
+    return;
+  }
+
   const id = Number(req.params.id);
 
   if (!Number.isInteger(id)) {
@@ -29,6 +36,11 @@ leaguesRouter.get("/:id/standings", async (req, res) => {
 
   if (!league) {
     res.status(404).json({ error: "Liga no encontrada" });
+    return;
+  }
+
+  if (!league.memberships.some((membership) => membership.userId === userId)) {
+    res.status(403).json({ error: "No eres miembro de esta liga" });
     return;
   }
 
@@ -119,7 +131,7 @@ const joinLeagueSchema = z.object({
   inviteCode: z.string().trim().toUpperCase().min(1),
 });
 
-// el id de la liga viaja en el cuerpo de la peticion
+// el código de invitación de la liga viaja en el cuerpo de la petición
 leaguesRouter.post("/join", requireAuth, async (req, res) => {
   const userId = req.userId;
 
@@ -151,7 +163,7 @@ leaguesRouter.post("/join", requireAuth, async (req, res) => {
   });
 
   if (userInLeague) {
-    res.status(409).json({ error: "User exist" });
+    res.status(409).json({ error: "Ya eres miembro de esta liga" });
     return;
   }
 
